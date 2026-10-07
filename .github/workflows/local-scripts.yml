@@ -1,0 +1,32 @@
+name: Local scripts
+
+# Proves the local refresh scripts run on macOS/Linux (refresh.sh) and Windows (refresh.ps1).
+# Runs only when those scripts or the generator change.
+
+on:
+  pull_request:
+    paths: [refresh.sh, refresh.ps1, scripts/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: refresh.sh --demo
+        if: runner.os != 'Windows'
+        run: bash refresh.sh --demo && test -s _site/data.js
+      - name: refresh.ps1 -Demo
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          powershell -ExecutionPolicy Bypass -File refresh.ps1 -Demo
+          if (-not (Test-Path _site/data.js)) { throw "data.js was not written" }

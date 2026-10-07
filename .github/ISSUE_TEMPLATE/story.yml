@@ -1,0 +1,23 @@
+name: Story
+description: A user-visible goal. Break it into sub-issues after you create it.
+labels: ["type:story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: "As a <who>, I can <do what>, so that <why>."
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: The checks that prove this story works. One per line.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: After creating it, add a layer label, a priority label and the milestone, then use "Create sub-issue" for each task.

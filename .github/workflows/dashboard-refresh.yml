@@ -1,0 +1,92 @@
+name: Dashboard refresh
+
+# Rebuilds the dashboard from this repository's issues, pull requests, workflow runs
+# and commits, then publishes it.
+#   - On a schedule (every 6 hours), when someone presses "Run workflow", and on every push to main.
+#   - If GitHub Pages is enabled with Source "GitHub Actions", the site is deployed there.
+#   - Either way, the built site is attached to the run as the "dashboard" artifact,
+#     so a private repository without Pages can still download and open it.
+# Nothing is committed back to the repository, so branch protection on main never blocks it.
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read        # read the code and commits
+  issues: read          # read issues, milestones and sub-issues
+  pull-requests: read   # read open pull requests and reviews
+  checks: read          # read build-test results on each pull request
+  actions: read         # read failed workflow runs
+  pages: write          # deploy to GitHub Pages
+  id-token: write       # required by the Pages deploy action
+
+concurrency:
+  group: dashboard-refresh
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      pages: ${{ steps.pages.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate dashboard.config.json
+        run: python3 scripts/generate_dashboard.py --check
+
+      - name: Build the dashboard from GitHub data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/generate_dashboard.py --out _site
+
+      - name: Keep the build honest (unit tests against the new data)
+        env:
+          DASHBOARD_SITE: _site
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Attach the site to this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard
+          path: _site
+          retention-days: 14
+
+      - name: Is GitHub Pages enabled for Actions?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" --jq '.build_type' 2>/dev/null | grep -q workflow; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is not set to 'GitHub Actions'. Download the 'dashboard' artifact from this run instead."
+          fi
+
+      - name: Package the site for Pages
+        if: steps.pages.outputs.enabled == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.pages == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

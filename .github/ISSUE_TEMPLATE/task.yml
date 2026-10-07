@@ -1,0 +1,21 @@
+name: Task
+description: One piece of work that fits in a single pull request.
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What to do
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: Add a layer label. If this task belongs to a story, add it to the story as a sub-issue.

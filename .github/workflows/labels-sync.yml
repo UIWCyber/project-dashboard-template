@@ -1,0 +1,25 @@
+name: Labels sync
+
+# Creates or updates the layer:<id>, type: and priority: labels whenever
+# dashboard.config.json changes on main. Labels are never deleted.
+
+on:
+  push:
+    branches: [main]
+    paths: [dashboard.config.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write   # labels belong to the issues API
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/sync_labels.py

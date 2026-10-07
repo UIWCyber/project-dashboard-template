@@ -1,0 +1,76 @@
+{
+  "project": {
+    "name": "Example Project",
+    "team": "Team Name",
+    "course": "COURSE 0000",
+    "description": "One sentence that says what your software does and who it is for."
+  },
+  "members": [
+    { "github": "student-a", "name": "Student A", "role": "Frontend" },
+    { "github": "student-b", "name": "Student B", "role": "Backend" },
+    { "github": "student-c", "name": "Student C", "role": "Data and security" },
+    { "github": "student-d", "name": "Student D", "role": "DevOps" }
+  ],
+  "layers": [
+    {
+      "id": "web-ui",
+      "name": "Web interface",
+      "stack_tier": "presentation",
+      "description": "Pages and forms the user sees in the browser.",
+      "technologies": ["HTML", "CSS", "JavaScript"],
+      "path": "",
+      "build": "",
+      "test": ""
+    },
+    {
+      "id": "api",
+      "name": "REST API",
+      "stack_tier": "application",
+      "description": "Endpoints that receive requests from the interface and apply the business rules.",
+      "technologies": ["Python", "Flask"],
+      "path": "",
+      "build": "",
+      "test": ""
+    },
+    {
+      "id": "database",
+      "name": "Database",
+      "stack_tier": "data",
+      "description": "Tables that store users, records and audit events.",
+      "technologies": ["PostgreSQL"],
+      "path": "",
+      "build": "",
+      "test": ""
+    },
+    {
+      "id": "auth",
+      "name": "Login and access control",
+      "stack_tier": "security",
+      "description": "Who can sign in and what each role is allowed to do.",
+      "technologies": ["OAuth 2.0", "bcrypt"],
+      "path": "",
+      "build": "",
+      "test": ""
+    },
+    {
+      "id": "infra",
+      "name": "Containers and hosting",
+      "stack_tier": "platform",
+      "description": "Where the software runs and how its parts are connected.",
+      "technologies": ["Docker", "Docker Compose"],
+      "path": "",
+      "build": "",
+      "test": ""
+    },
+    {
+      "id": "ci",
+      "name": "Build and test pipeline",
+      "stack_tier": "delivery",
+      "description": "GitHub Actions workflows that build, test and publish the project.",
+      "technologies": ["GitHub Actions"],
+      "path": "",
+      "build": "",
+      "test": ""
+    }
+  ]
+}

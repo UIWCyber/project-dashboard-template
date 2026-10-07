@@ -1,0 +1,82 @@
+name: Build tests
+
+# Runs on every pull request and every push to main. Make the "all-green" job a required
+# status check (Settings, Rules or Branches) so nothing merges while a test is failing.
+#
+#   dashboard-checks  the config is valid and the dashboard builds (this template's own tests)
+#   layer-tests       for each layer with a "test" command in dashboard.config.json:
+#                     cd into its "path", run its "build" command, then its "test" command
+#   all-green         one summary result to require in branch protection
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate dashboard.config.json
+        run: python3 scripts/generate_dashboard.py --check
+      - name: Build the dashboard with sample data
+        run: python3 scripts/generate_dashboard.py --demo --out _site
+      - name: Unit tests
+        env:
+          DASHBOARD_SITE: _site
+        run: python3 -m unittest discover -s tests -v
+      - name: Plan one test job per layer
+        id: plan
+        run: python3 scripts/layer_matrix.py
+
+  layer-tests:
+    needs: dashboard-checks
+    if: needs.dashboard-checks.outputs.count != '0'
+    name: layer-tests (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.dashboard-checks.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    steps:
+      - uses: actions/checkout@v4
+      # ubuntu-latest already has Python, Node.js, Java, Go and Docker installed.
+      # Add an actions/setup-* step here if a layer needs a specific version.
+      - name: Build
+        if: matrix.build != ''
+        run: ${{ matrix.build }}
+      - name: Test
+        run: ${{ matrix.test }}
+
+  all-green:
+    needs: [dashboard-checks, layer-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every build test passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::A build test did not pass ($r). Open the failed job above to read its log."
+              exit 1
+            fi
+          done

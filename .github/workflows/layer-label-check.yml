@@ -1,0 +1,22 @@
+name: Layer label check
+
+# Every pull request must carry a layer:<id> label, so the dashboard can place it on the stack.
+# Add the label in the pull request sidebar; this check re-runs when labels change.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  layer-label:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require a layer label
+        env:
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: python3 scripts/check_pr_layer.py
